@@ -1,0 +1,2 @@
+https://github.com/Stellarium/stellarium_star_catalogs/tree/main
+https://github.com/Stellarium/stellarium/tree/master/stars
