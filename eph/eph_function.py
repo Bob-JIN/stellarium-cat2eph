@@ -122,15 +122,21 @@ class EPHFileWriter:
         nuniq = 4 * (1 << (2 * order)) + pix
         tile_data = struct.pack("<IQ", 3, nuniq)
         
+        # 单位常量（与参考文件一致）
+        EPH_RAD          = 1 << 16
+        EPH_VMAG         = 3 << 16
+        EPH_ARCSEC       = (1 << 16) | 1 | 2 | 4   # 0x10007
+        EPH_RAD_PER_YEAR = 6 << 16
+        
         columns = [
             {"name": "hip", "type": "i", "unit": 0, "start": 0, "size": 4},
             {"name": "hd", "type": "i", "unit": 0, "start": 4, "size": 4},
-            {"name": "vmag", "type": "f", "unit": 196608, "start": 8, "size": 4},
-            {"name": "ra", "type": "f", "unit": 65536, "start": 12, "size": 4},
-            {"name": "de", "type": "f", "unit": 65536, "start": 16, "size": 4},
-            {"name": "plx", "type": "f", "unit": 65543, "start": 20, "size": 4},
-            {"name": "pra", "type": "f", "unit": 393216, "start": 24, "size": 4},
-            {"name": "pde", "type": "f", "unit": 393216, "start": 28, "size": 4},
+            {"name": "vmag", "type": "f", "unit": EPH_VMAG, "start": 8, "size": 4},
+            {"name": "ra", "type": "f", "unit": EPH_RAD, "start": 12, "size": 4},
+            {"name": "de", "type": "f", "unit": EPH_RAD, "start": 16, "size": 4},
+            {"name": "plx", "type": "f", "unit": EPH_ARCSEC, "start": 20, "size": 4},
+            {"name": "pra", "type": "f", "unit": EPH_RAD_PER_YEAR, "start": 24, "size": 4},
+            {"name": "pde", "type": "f", "unit": EPH_RAD_PER_YEAR, "start": 28, "size": 4},
             {"name": "bv", "type": "f", "unit": 0, "start": 32, "size": 4},
             {"name": "ids", "type": "s", "unit": 0, "start": 36, "size": 256},
         ]
@@ -241,7 +247,7 @@ def cat_star_to_eph_star(cat_star: Dict[str, Any]) -> Dict[str, Any]:
         "vmag": cat_star.get("vmag", 0.0),
         "ra": ra_rad,
         "de": dec_rad,
-        "plx": cat_star.get("parallax", 0.0),
+        "plx": cat_star.get("parallax", 0.0) / 1000.0,  # 转换为arcsec单位
         "pra": pmra,
         "pde": pmdec,
         "bv": cat_star.get("b_v", 0.0),
@@ -274,8 +280,11 @@ def write_eph_for_healpix(output_dir: str, order: int, pix: int, stars: List[Dic
     try:
         eph_stars = [cat_star_to_eph_star(s) for s in stars]
         
+        # 按 vmag 排序（亮星在前，与参考文件一致）
+        eph_stars.sort(key=lambda s: s["vmag"])
+        
         with EPHFileWriter(str(output_path)) as writer:
-            writer.write_json_chunk('{"generator":"cat2eph", "version":"1.0"}')
+            writer.write_json_chunk('{"children_mask": 15}')
             writer.write_star_chunk(eph_stars, order=order, pix=pix)
         
         is_valid, msg = writer.verify_file()
