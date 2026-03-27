@@ -14,7 +14,7 @@ The project includes a complete toolchain for parsing, conversion, writing, and 
 
 Special thanks to Professor Yang Yafei for his guidance, the project was successfully implemented with his support.
 
-特别感谢杨亚非老师指导，项目在杨老师支持下成功实现。
+特别感谢杨亚飞老师指导，项目在杨老师支持下成功实现。
 
 ## Directory Structure
 ## 目录结构
